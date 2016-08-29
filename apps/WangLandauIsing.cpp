@@ -11,21 +11,9 @@
 #include <map>
 #include "Lattice.h"
 #include "Field.h"
+#include "IsingHamiltonian.h"
 
 namespace FermiOwn {
-
-double calculateEnergy( Lattice& lat, Field<int>& spin, double J ) {
-	//returns -Hamiltonian
-	double sum = 0;
-	for( size_t x = 0; x < lat.getVol(); x++ ) {
-		const std::vector< size_t > nn = lat.getNeighbours( x );
-		for( size_t y : nn ) {
-			sum += spin(y)*spin(x);
-		}
-	}
-	sum *= J;
-	return sum;
-}
 
 double getDos( const std::map<double,double>& dos, const double energy ) {
 	auto it = dos.find( energy );
@@ -67,8 +55,9 @@ int main() {
 	size_t dofPerPoint = 1;
 	double J = 0.3;
 
-	double f = 1.;
-	double flatness = 0.9;
+	double f = 2.;
+	double flatness = 0.80;
+	double finalTol = 1e-10;
 
 	size_t numUpdates = 10000000;
 	size_t histCheckEvery = 1000;
@@ -80,6 +69,9 @@ int main() {
 	std::uniform_real_distribution<double> real_dist;
 
 	Field<int> spin( lat.getVol(), dofPerPoint, &rndGen, oneInit);
+
+	IsingHamiltonian H( lat, spin, J );
+
 	std::map<double, double> dos;
 	std::map<double, size_t> hist;
 
@@ -90,7 +82,7 @@ int main() {
 
 	spin.Print();
 
-	double E = calculateEnergy( lat, spin, J );
+	double E = H.calculateEnergy();
 
 //	std::cout << "Energy: " << E << " DoS: " << getDos( dos, E );
 
@@ -101,7 +93,7 @@ int main() {
 		size_t x = x_dist( rndGen ); //change spin at a random point
 		spin( x ) *= -1;
 
-		double newE = calculateEnergy( lat, spin, J );
+		double newE = H.calculateEnergy();
 //		std::cout << " new Energy: " << newE;
 
 		double prop = std::exp( getDos(dos, E) - getDos( dos, newE ) );
@@ -120,6 +112,7 @@ int main() {
 
 		if( (i+1)%histCheckEvery == 0 && histFlat( hist, flatness ) ) {
 			f *= 0.5;
+			if( f < finalTol ) break;
 			hist.clear();
 //			for( auto histPair : hist ) {
 //				histPair.second = 0;
@@ -130,8 +123,9 @@ int main() {
 
 	std::cout << std::endl;
 	std::cout << "Density of states: " << std::endl;
+	std::cerr.precision( 17 );
 	for( auto dosPair : dos ) {
-		std::cerr << dosPair.first << "\t" << dosPair.second << std::endl;
+		std::cerr <<  dosPair.first << "\t" << dosPair.second << std::endl;
 	}
 
 	std::cout << std::endl;
