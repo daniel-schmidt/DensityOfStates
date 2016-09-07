@@ -10,10 +10,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=native -std=c++11 -lm
 
 include_directories($ENV{EIGEN3_INCLUDE_DIR})
 include_directories("FermiOwnCommon/src/Actions")
-include_directories("FermiOwnCommon/src/Math")
+include_directories("FermiOwnCommon/src/Algorithms")
 include_directories("FermiOwnCommon/src/Data")
+include_directories("FermiOwnCommon/src/Math")
 include_directories("src")
 
 add_subdirectory("FermiOwnCommon")
 add_subdirectory("src")
 add_subdirectory("apps")
+add_subdirectory("test")

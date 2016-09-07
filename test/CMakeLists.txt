@@ -1,0 +1,2 @@
+add_executable( TrunkatedMetropolis_test "TrunkatedMetropolis_test.cpp" )
+target_link_libraries( TrunkatedMetropolis_test ActionsCommon AlgorithmsCommon DataCommon )
