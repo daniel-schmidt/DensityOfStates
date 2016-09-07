@@ -82,7 +82,7 @@ int main() {
 
 	spin.Print();
 
-	double E = H.calculateEnergy();
+	double E = -H.calculateEnergy();
 
 //	std::cout << "Energy: " << E << " DoS: " << getDos( dos, E );
 
@@ -93,7 +93,7 @@ int main() {
 		size_t x = x_dist( rndGen ); //change spin at a random point
 		spin( x ) *= -1;
 
-		double newE = H.calculateEnergy();
+		double newE = -H.calculateEnergy();
 //		std::cout << " new Energy: " << newE;
 
 		double prop = std::exp( getDos(dos, E) - getDos( dos, newE ) );
