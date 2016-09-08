@@ -12,6 +12,8 @@
 #include "Lattice.h"
 #include "Field.h"
 #include "IsingHamiltonian.h"
+#include "MetropolisStep.h"
+#include "ConfigGenerator.h"
 
 namespace FermiOwn {
 
@@ -49,14 +51,14 @@ bool histFlat( const std::map<double, size_t>& hist, const double flatness ) {
 int main() {
 	using namespace FermiOwn;
 
-	size_t Nt = 16;
-	size_t Ns = 16;
+	size_t Nt = 4;
+	size_t Ns = 4;
 	size_t dim = 2;
 	size_t dofPerPoint = 1;
 	double J = 0.3;
 
 	double f = 2.;
-	double flatness = 0.80;
+	double flatness = 0.90;
 	double finalTol = 1e-10;
 
 	size_t numUpdates = 10000000;
@@ -84,42 +86,49 @@ int main() {
 
 	double E = -H.calculateEnergy();
 
-//	std::cout << "Energy: " << E << " DoS: " << getDos( dos, E );
+	double newE;
+	size_t x;
 
-
-//	std::cout << " DoS again: " << getDos( dos, E );
-
-	for( size_t i = 0; i < numUpdates; i++ ) {
-		size_t x = x_dist( rndGen ); //change spin at a random point
+	auto propose = [&]() {
+		x = x_dist( rndGen ); //change spin at a random point
 		spin( x ) *= -1;
+		newE = -H.calculateEnergy();
+	};
 
-		double newE = -H.calculateEnergy();
-//		std::cout << " new Energy: " << newE;
+	auto change = [&]() {
+		return std::exp( getDos(dos, E) - getDos( dos, newE ) );
+	};
 
-		double prop = std::exp( getDos(dos, E) - getDos( dos, newE ) );
-		double r = real_dist( rndGen );
-//		std::cout << " r=" << r << " < " << prop;
-		if( r < prop ) {
-			E=newE;
-//			std::cout << " accepted." << std::endl;
-		} else {
-			// we reset the spin flip
-			spin( x ) *= -1;
-//			std::cout << " rejected." << std::endl;
-		}
+	auto accept = [&]() {
+		E=newE;
+	};
+
+	auto reject = [&]() {
+		spin( x ) *= -1;
+	};
+
+	auto onConfig = [&](int confNum) {
 		dos[E] += f;
 		hist[E]++;
 
-		if( (i+1)%histCheckEvery == 0 && histFlat( hist, flatness ) ) {
+		if( (confNum+1)%histCheckEvery == 0 && histFlat( hist, flatness ) ) {
 			f *= 0.5;
-			if( f < finalTol ) break;
+			if( f < finalTol ) return false;
 			hist.clear();
-//			for( auto histPair : hist ) {
-//				histPair.second = 0;
-//			}
 		}
+		return true;
+	};
 
-	}
+	MetropolisStep metStep( propose, change, accept, reject, &rndGen );
+	auto step = [&]() {
+		metStep.step();
+	};
+	size_t numThermal = 1;
+	size_t numUpPerConf = 1;
+
+	ConfigGenerator confGen( numThermal, numUpdates, numUpPerConf, step , onConfig );
+
+	confGen.run();
 
 	std::cout << std::endl;
 	std::cout << "Density of states: " << std::endl;
