@@ -7,7 +7,7 @@
 
 #include "Lattice.h"
 #include "IsingHamiltonian.h"
-#include "MetropolisStep.h"
+#include "MetropolisWangLandauStep.h"
 #include "ConfigGenerator.h"
 
 //#include "TrunkatedMetropolis.h"
@@ -54,31 +54,36 @@ int main( int argc, char** argv ) {
 	double dE = atof( argv[2] );
 
 	std::cout << "#Running algorithm for E0 = " << E0 << " and dE = " << dE << std::endl;
-	double Echange = 0.;
-	// metropolis initialization
-	auto propose = [&] () {
-		//		std::cout << "Propose" << std::endl;
-		do {
-			new_x = x_dist( rndGen );
-			Echange = beta*H.changeAt( new_x );
-			//			std::cout << " change in E: " << Echange << std::endl;
-		} while( currE+Echange > E0+dE/2. || currE+Echange < E0-dE/2. );
-	};
-	auto change = [&]() {
-		return std::exp( a*Echange );
-	};
-	auto accept = [&]() {
-		spin( new_x ) *= -1;	// flip spin to accept config.
-		currE += Echange;
-	};
-	auto reject = [&]() {
-		//		std::cout << "rejected" << std::endl;
-	};
-	MetropolisStep met( propose, change, accept, reject, &rndGen );
+//	double Echange = 0.;
+//	// metropolis initialization
+//	auto propose = [&] () {
+//		//		std::cout << "Propose" << std::endl;
+//		do {
+//			new_x = x_dist( rndGen );
+//			Echange = beta*H.changeAt( new_x );
+//			//			std::cout << " change in E: " << Echange << std::endl;
+//		} while( currE+Echange > E0+dE/2. || currE+Echange < E0-dE/2. );
+//	};
+//	auto change = [&]() {
+//		return std::exp( a*Echange );
+//	};
+//	auto accept = [&]() {
+//		spin( new_x ) *= -1;	// flip spin to accept config.
+//		currE += Echange;
+//	};
+//	auto reject = [&]() {
+//		//		std::cout << "rejected" << std::endl;
+//	};
+
+	double f =2.0;
+	double fFinal = 1e-8;
+	double flatness = 0.8;
+	size_t checkHist = 100;
+	MetropolisWangLandauStep met( spin, H, f, fFinal, flatness, checkHist, &rndGen );
 
 	double EdiffFromE0 = 0.;
-	auto step = [&](){ met.step(); };
-	auto onConfig = [&]( int confNum ){
+//	auto step = [&](){ met.step(); };
+	auto measure = [&]( ){
 		EdiffFromE0 += currE-E0;
 		//		std::cout << currE-E0 << std::endl;
 		// average spin on lattice
@@ -92,7 +97,7 @@ int main( int argc, char** argv ) {
 		return true;
 	};
 
-	ConfigGenerator confGen( numThermal, numConfs, numUpPerConf, step, onConfig );
+	ConfigGenerator confGen( numThermal, numConfs, numUpPerConf, &met, measure );
 	for( size_t n = 0; n < 500; n++ ){
 		confGen.run();
 
