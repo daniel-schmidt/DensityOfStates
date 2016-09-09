@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include <random>
-#include <map>
 #include "Lattice.h"
 #include "Field.h"
 #include "IsingHamiltonian.h"
@@ -107,27 +106,28 @@ int main() {
 //		spin( x ) *= -1;
 //	};
 
-	MetropolisWangLandauStep wlStep( spin, H, &rndGen );
+	MetropolisWangLandauStep wlStep( spin, H, f, finalTol, flatness, histCheckEvery, &rndGen );
 
-	auto onConfig = [&](int confNum) {
-		wlStep.addToDos( f );
-		wlStep.increaseHist();
-
-		if( (confNum+1)%histCheckEvery == 0 && histFlat( wlStep.getHist(), flatness ) ) {
-			f *= 0.5;
-			if( f < finalTol ) return false;
-			wlStep.getHist().clear();
-		}
-		return true;
-	};
-
-	auto step = [&]() {
-		wlStep.step();
-	};
+//	auto onConfig = [&](int confNum) {
+//		wlStep.addToDos( f );
+//		wlStep.increaseHist();
+//
+//		if( (confNum+1)%histCheckEvery == 0 && histFlat( wlStep.getHist(), flatness ) ) {
+//			f *= 0.5;
+//			if( f < finalTol ) return false;
+//			wlStep.getHist().clear();
+//		}
+//		return true;
+//	};
+//
+//	auto step = [&]() {
+//		wlStep.step();
+//	};
 	size_t numThermal = 1;
 	size_t numUpPerConf = 1;
 
-	ConfigGenerator confGen( numThermal, numUpdates, numUpPerConf, step , onConfig );
+	auto measure = [](){};
+	ConfigGenerator confGen( numThermal, numUpdates, numUpPerConf, &wlStep , measure );
 
 	confGen.run();
 
