@@ -12,19 +12,19 @@
 #include "Lattice.h"
 #include "Field.h"
 #include "IsingHamiltonian.h"
-#include "MetropolisStep.h"
+#include "MetropolisWangLandauStep.h"
 #include "ConfigGenerator.h"
 
 namespace FermiOwn {
 
-double getDos( const std::map<double,double>& dos, const double energy ) {
-	auto it = dos.find( energy );
-	if( it == dos.end() ) {
-		return 0;
-	} else {
-		return it->second;
-	}
-}
+//double getDos( const std::map<double,double>& dos, const double energy ) {
+//	auto it = dos.find( energy );
+//	if( it == dos.end() ) {
+//		return 0;
+//	} else {
+//		return it->second;
+//	}
+//}
 
 bool histFlat( const std::map<double, size_t>& hist, const double flatness ) {
 	double meanHist = 0.;
@@ -74,8 +74,8 @@ int main() {
 
 	IsingHamiltonian H( lat, spin, J );
 
-	std::map<double, double> dos;
-	std::map<double, size_t> hist;
+//	std::map<double, double> dos;
+//	std::map<double, size_t> hist;
 
 	for( size_t x = 0; x < lat.getVol(); x++ ) {
 		if( spin_dist(rndGen) == 1 )
@@ -84,44 +84,45 @@ int main() {
 
 	spin.Print();
 
-	double E = -H.calculateEnergy();
+//	double E = -H.calculateEnergy();
 
-	double newE;
-	size_t x;
+//	double newE;
+//	size_t x;
 
-	auto propose = [&]() {
-		x = x_dist( rndGen ); //change spin at a random point
-		spin( x ) *= -1;
-		newE = -H.calculateEnergy();
-	};
+//	auto propose = [&]() {
+//		x = x_dist( rndGen ); //change spin at a random point
+//		spin( x ) *= -1;
+//		newE = -H.calculateEnergy();
+//	};
+//
+//	auto change = [&]() {
+//		return std::exp( getDos(dos, E) - getDos( dos, newE ) );
+//	};
+//
+//	auto accept = [&]() {
+//		E=newE;
+//	};
+//
+//	auto reject = [&]() {
+//		spin( x ) *= -1;
+//	};
 
-	auto change = [&]() {
-		return std::exp( getDos(dos, E) - getDos( dos, newE ) );
-	};
-
-	auto accept = [&]() {
-		E=newE;
-	};
-
-	auto reject = [&]() {
-		spin( x ) *= -1;
-	};
+	MetropolisWangLandauStep wlStep( spin, H, &rndGen );
 
 	auto onConfig = [&](int confNum) {
-		dos[E] += f;
-		hist[E]++;
+		wlStep.addToDos( f );
+		wlStep.increaseHist();
 
-		if( (confNum+1)%histCheckEvery == 0 && histFlat( hist, flatness ) ) {
+		if( (confNum+1)%histCheckEvery == 0 && histFlat( wlStep.getHist(), flatness ) ) {
 			f *= 0.5;
 			if( f < finalTol ) return false;
-			hist.clear();
+			wlStep.getHist().clear();
 		}
 		return true;
 	};
 
-	MetropolisStep metStep( propose, change, accept, reject, &rndGen );
 	auto step = [&]() {
-		metStep.step();
+		wlStep.step();
 	};
 	size_t numThermal = 1;
 	size_t numUpPerConf = 1;
@@ -133,17 +134,22 @@ int main() {
 	std::cout << std::endl;
 	std::cout << "Density of states: " << std::endl;
 	std::cerr.precision( 17 );
+	auto dos = wlStep.getDos();
 	for( auto dosPair : dos ) {
 		std::cerr <<  dosPair.first << "\t" << dosPair.second << std::endl;
 	}
 
 	std::cout << std::endl;
 	std::cout << "Histogram:" << std::endl;
-	for( auto histPair : hist ) {
+	for( auto histPair : wlStep.getHist() ) {
 		std::cout << histPair.first << "\t" << histPair.second << std::endl;
 	}
 
 	std::cout << "Final f: " << f << std::endl;
+
+//	WangLandauAlgorithm wla( numThermal, numUpdates, numUpPerConf, rndGen );
+
+//	wla.run();
 
 	return 0;
 }
