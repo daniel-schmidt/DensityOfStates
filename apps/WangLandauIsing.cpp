@@ -14,39 +14,6 @@
 #include "MetropolisWangLandauStep.h"
 #include "ConfigGenerator.h"
 
-namespace FermiOwn {
-
-//double getDos( const std::map<double,double>& dos, const double energy ) {
-//	auto it = dos.find( energy );
-//	if( it == dos.end() ) {
-//		return 0;
-//	} else {
-//		return it->second;
-//	}
-//}
-
-bool histFlat( const std::map<double, size_t>& hist, const double flatness ) {
-	double meanHist = 0.;
-	double minHist = hist.begin()->second;
-	for( auto histPair : hist ) {
-		meanHist += histPair.second;
-		if( histPair.second < minHist ) {
-			minHist = histPair.second;
-		}
-	}
-	meanHist /= hist.size();
-	std::cout << "meanHist: " << meanHist << " minHist: " << minHist << " > " << meanHist*flatness << "?";
-	if( meanHist*flatness < minHist ) {
-		std::cout << " Histogram flat!" << std::endl;
-		return true;
-	} else {
-		std::cout << " Not flat!" << std::endl;
-		return false;
-	}
-}
-
-}
-
 int main() {
 	using namespace FermiOwn;
 
@@ -66,15 +33,10 @@ int main() {
 
 	std::ranlux48 rndGen;
 	std::uniform_int_distribution<int> spin_dist(0,1);
-	std::uniform_int_distribution<int> x_dist( 0, lat.getVol()-1 );
-	std::uniform_real_distribution<double> real_dist;
 
 	Field<int> spin( lat.getVol(), dofPerPoint, &rndGen, oneInit);
 
 	IsingHamiltonian H( lat, spin, J );
-
-//	std::map<double, double> dos;
-//	std::map<double, size_t> hist;
 
 	for( size_t x = 0; x < lat.getVol(); x++ ) {
 		if( spin_dist(rndGen) == 1 )
@@ -83,46 +45,8 @@ int main() {
 
 	spin.Print();
 
-//	double E = -H.calculateEnergy();
-
-//	double newE;
-//	size_t x;
-
-//	auto propose = [&]() {
-//		x = x_dist( rndGen ); //change spin at a random point
-//		spin( x ) *= -1;
-//		newE = -H.calculateEnergy();
-//	};
-//
-//	auto change = [&]() {
-//		return std::exp( getDos(dos, E) - getDos( dos, newE ) );
-//	};
-//
-//	auto accept = [&]() {
-//		E=newE;
-//	};
-//
-//	auto reject = [&]() {
-//		spin( x ) *= -1;
-//	};
-
 	MetropolisWangLandauStep wlStep( spin, H, f, finalTol, flatness, histCheckEvery, &rndGen );
 
-//	auto onConfig = [&](int confNum) {
-//		wlStep.addToDos( f );
-//		wlStep.increaseHist();
-//
-//		if( (confNum+1)%histCheckEvery == 0 && histFlat( wlStep.getHist(), flatness ) ) {
-//			f *= 0.5;
-//			if( f < finalTol ) return false;
-//			wlStep.getHist().clear();
-//		}
-//		return true;
-//	};
-//
-//	auto step = [&]() {
-//		wlStep.step();
-//	};
 	size_t numThermal = 1;
 	size_t numUpPerConf = 1;
 
@@ -145,11 +69,7 @@ int main() {
 		std::cout << histPair.first << "\t" << histPair.second << std::endl;
 	}
 
-	std::cout << "Final f: " << f << std::endl;
-
-//	WangLandauAlgorithm wla( numThermal, numUpdates, numUpPerConf, rndGen );
-
-//	wla.run();
+	std::cout << "Final f: " << wlStep.getF() << std::endl;
 
 	return 0;
 }

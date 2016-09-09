@@ -23,9 +23,7 @@ MetropolisWangLandauStep::MetropolisWangLandauStep( Field<int>& spinField, const
 			Ftol( finalFTol )
 {}
 
-MetropolisWangLandauStep::~MetropolisWangLandauStep() {
-	// TODO Auto-generated destructor stub
-}
+MetropolisWangLandauStep::~MetropolisWangLandauStep() {}
 
 void MetropolisWangLandauStep::propose() {
 	new_x = x_dist( *rnd ); //change spin at a random point
@@ -76,12 +74,12 @@ bool MetropolisWangLandauStep::histFlat() {
 		}
 	}
 	meanHist /= hist.size();
-	std::cout << "meanHist: " << meanHist << " minHist: " << minHist << " > " << meanHist*flat << "?";
+//	std::cout << "meanHist: " << meanHist << " minHist: " << minHist << " > " << meanHist*flat << "?";
 	if( meanHist*flat < minHist ) {
-		std::cout << " Histogram flat!" << std::endl;
+//		std::cout << " Histogram flat!" << std::endl;
 		return true;
 	} else {
-		std::cout << " Not flat!" << std::endl;
+//		std::cout << " Not flat!" << std::endl;
 		return false;
 	}
 }

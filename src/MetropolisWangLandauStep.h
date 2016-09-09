@@ -21,8 +21,9 @@ public:
 
 	virtual bool onConfig( size_t confNum );
 
-	inline std::map< double, size_t > & getHist();
-	inline std::map< double, double > & getDos();
+	inline const std::map< double, size_t > & getHist() const;
+	inline const std::map< double, double > & getDos() const;
+	inline const double getF() const;
 
 protected:
 	virtual void propose();
@@ -49,12 +50,16 @@ protected:
 	double Ftol;
 };
 
-std::map< double, size_t > & MetropolisWangLandauStep::getHist() {
+const std::map< double, size_t > & MetropolisWangLandauStep::getHist() const {
 	return hist;
 }
 
-std::map< double, double > & MetropolisWangLandauStep::getDos() {
+const std::map< double, double > & MetropolisWangLandauStep::getDos() const {
 	return dos;
+}
+
+const double MetropolisWangLandauStep::getF() const {
+	return f;
 }
 
 } /* namespace FermiOwn */
